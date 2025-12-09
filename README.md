@@ -1,4 +1,4 @@
-# Snakes & Security Missteps
+# Mitigations & Missteps
 
 Card-driven, online Snakes & Ladders variant for incident-response storytelling. A 50-square board: land on marked squares to draw a random "control" (move forward) or "misstep" (move back); each player starts off-board with a mitigation hand to counter missteps (your choice), and burned mitigations drop into a visible discard pile.
 

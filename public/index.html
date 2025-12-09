@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snakes &amp; Security Missteps</title>
+  <title>Mitigations &amp; Missteps</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
   <div class="noise"></div>
   <header class="hero">
     <div class="hero__copy">
-      <p class="eyebrow">Snakes &amp; Security Missteps</p>
+      <p class="eyebrow">Mitigations &amp; Missteps</p>
       <h1>Race to 100 with controls, missteps, and mitigation cards.</h1>
       <p class="lede">
         An online-ready, card-driven take on Snakes &amp; Ladders. Land on card squares, draw a control (move up) or misstep (move back),
@@ -47,20 +47,9 @@
 
   <main class="layout">
     <section class="board-shell">
-      <div class="board-card">
-        <div class="board-head">
-          <div>
-            <p class="eyebrow">Board</p>
-            <h2>Controls &amp; Missteps deck</h2>
-          </div>
-          <div class="status-group">
-            <span class="status-dot" id="status-dot"></span>
-            <span id="status-label">Not joined</span>
-          </div>
-        </div>
+      <div class="board-card splash-only">
         <div class="board-wrap">
-          <div id="board" class="board-grid"></div>
-          <div id="pieces-layer" class="pieces-layer" aria-hidden="true"></div>
+          <div class="splash-cover"></div>
         </div>
         <div class="board-footer">
           <button id="roll-btn" class="btn primary" disabled>Roll the die</button>
@@ -113,20 +102,6 @@
           <h3>Recent rolls</h3>
         </div>
         <ul id="feed" class="list feed"></ul>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <p class="eyebrow">Template ideas</p>
-          <h3>Customize for IR</h3>
-        </div>
-        <ul class="list tips">
-          <li><strong>Swap card text</strong> in <code>server.js</code> to mirror your incident realities.</li>
-          <li><strong>Tune card squares</strong> via <code>CARD_SPACES</code> to control how often draws occur.</li>
-          <li><strong>Add more mitigations</strong> to <code>MITIGATION_CARDS</code> and tags you want to cover.</li>
-          <li><strong>Track metrics</strong> by emitting more data (time to win, rolls taken) to the feed or logs.</li>
-          <li><strong>Brand it</strong> by updating colors, tokens, and background shapes in <code>public/styles.css</code>.</li>
-        </ul>
       </div>
     </aside>
   </main>

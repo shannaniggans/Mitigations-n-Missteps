@@ -200,6 +200,10 @@ small {
   gap: 1rem;
 }
 
+.splash-only .board-footer {
+  margin-top: 0;
+}
+
 .board-head {
   display: flex;
   align-items: center;
@@ -224,71 +228,24 @@ small {
 
 .board-wrap {
   position: relative;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 16 / 9;
   margin-top: 1rem;
-  background: radial-gradient(circle at 10% 10%, rgba(124, 242, 201, 0.1), transparent 35%),
-    radial-gradient(circle at 90% 80%, rgba(126, 164, 255, 0.12), transparent 35%),
-    rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: visible;
 }
 
-.board-grid {
+.splash-cover {
   position: absolute;
   inset: 0;
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  grid-template-rows: repeat(10, 1fr);
-  gap: 1px;
+  background: url('splash.svg') center/cover no-repeat;
+  border-radius: inherit;
 }
 
-.cell {
-  position: relative;
-  background: rgba(10, 14, 23, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  padding: 0.4rem;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  color: var(--ink);
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.cell .badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0.25rem 0.45rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #0f1320;
-  margin-top: 0.15rem;
-}
-
-.badge.ladder {
-  background: linear-gradient(120deg, #7cf2c9, #b2ffe4);
-}
-
-.badge.snake {
-  background: linear-gradient(120deg, #f78f8f, #f7c266);
-}
-
-.badge.card {
-  background: linear-gradient(120deg, #7ea4ff, #7cf2c9);
-}
-
-.board-links,
+.board-grid,
 .pieces-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.pieces-layer {
-  display: block;
+  display: none;
 }
 
 .token {
