@@ -83,6 +83,13 @@
     state.pendingMitigation = snapshot.pendingMitigation || null;
     state.discards = snapshot.discards || [];
     lastSnapshot = snapshot;
+
+    if (snapshot.lastAction && snapshot.lastAction.reset) {
+      state.feed = [];
+      state.lastActionId = 0;
+      renderFeed();
+    }
+
     if (!boardBuilt || boardNeedsRebuild(state.cardSpaces)) {
       buildBoard(state.cardSpaces);
     }
@@ -423,6 +430,12 @@
     const desc = describeAction(action);
     const seq = Number.isFinite(actionCounter) ? actionCounter : null;
     const id = action.id ?? seq ?? Date.now();
+    if (action.reset) {
+      state.feed = [];
+      state.lastActionId = id;
+      renderFeed();
+      return;
+    }
     const alreadySeen = id === state.lastActionId || (state.feed[0] && state.feed[0] === desc);
     if (alreadySeen) return;
 
