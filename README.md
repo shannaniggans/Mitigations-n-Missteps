@@ -9,7 +9,7 @@ Card-driven, online Snakes & Ladders variant for incident-response storytelling.
 
 ## How the game works
 - **Rooms**: Players join a named room (e.g., `alpha`). Anyone using the same code shares the same state.
-- **Joining**: Enter a display name (24 chars max) and room code (32 chars max). First player sets turn order; later players append to the end. Everyone starts off the board at position 0 until their first roll.
+- **Joining**: Enter a display name (24 chars max) and room code (32 chars max). A random two-word room code is suggested each session; first player sets turn order, later players append to the end. Everyone starts off the board at position 0 until their first roll.
 - **Turn order**: Locked to join order. After each valid roll, turn advances to the next player (wraps to start).
 - **Dice**: Server rolls a fair 6-sided die when the current player clicks “Roll the die.” Out-of-turn clicks are rejected.
 - **Card squares**: Landing on a marked square draws a random card:

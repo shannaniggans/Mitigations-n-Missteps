@@ -1,13 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg: #070910;
-  --panel: #0f1320;
-  --muted: #c8cfdb;
-  --ink: #f7f8fb;
-  --accent: #7cf2c9;
-  --accent-2: #7ea4ff;
-  --accent-3: #f7c266;
+  --bg: #1f2a36;
+  --panel: #243240;
+  --muted: #d8cfb5;
+  --ink: #f4ecd7;
+  --accent: #c4612f;
+  --accent-2: #5da89d;
+  --accent-3: #4c8c4f;
   --border: rgba(255, 255, 255, 0.08);
   --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
@@ -22,9 +22,10 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
-  background: radial-gradient(circle at 20% 20%, rgba(124, 242, 201, 0.06), transparent 35%),
-    radial-gradient(circle at 80% 0%, rgba(126, 164, 255, 0.06), transparent 30%),
-    radial-gradient(circle at 40% 90%, rgba(247, 194, 102, 0.05), transparent 30%),
+  background:
+    radial-gradient(circle at 20% 20%, rgba(93, 168, 157, 0.08), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(196, 97, 47, 0.08), transparent 30%),
+    radial-gradient(circle at 40% 90%, rgba(76, 140, 79, 0.07), transparent 30%),
     var(--bg);
   color: var(--ink);
   line-height: 1.4;
@@ -159,9 +160,9 @@ small {
 }
 
 .btn.primary {
-  border-color: rgba(124, 242, 201, 0.4);
-  background: linear-gradient(120deg, rgba(124, 242, 201, 0.18), rgba(126, 164, 255, 0.16));
-  box-shadow: 0 10px 30px rgba(126, 164, 255, 0.25);
+  border-color: rgba(196, 97, 47, 0.5);
+  background: linear-gradient(120deg, rgba(196, 97, 47, 0.3), rgba(93, 168, 157, 0.22));
+  box-shadow: 0 10px 30px rgba(196, 97, 47, 0.3);
 }
 
 .btn.ghost {
@@ -230,22 +231,83 @@ small {
   position: relative;
   aspect-ratio: 16 / 9;
   margin-top: 1rem;
-  background: rgba(255, 255, 255, 0.03);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(93, 168, 157, 0.08), transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(196, 97, 47, 0.08), transparent 45%),
+    url('splash.png') center/contain no-repeat,
+    rgba(255, 255, 255, 0.03);
+  background-size: 200% 200%, 200% 200%, contain, auto;
+  background-position: 10% 10%, 90% 80%, center, center;
+  background-repeat: no-repeat;
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: visible;
 }
 
-.splash-cover {
-  position: absolute;
-  inset: 0;
-  background: url('splash.svg') center/cover no-repeat;
-  border-radius: inherit;
+.board-wrap.joined {
+  background:
+    radial-gradient(circle at 10% 10%, rgba(93, 168, 157, 0.05), transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(196, 97, 47, 0.05), transparent 45%),
+    rgba(19, 28, 37, 0.8);
 }
 
-.board-grid,
-.pieces-layer {
+.board-wrap:not(.joined) .board-grid,
+.board-wrap:not(.joined) .pieces-layer {
   display: none;
+}
+
+.board-wrap.joined .splash-cover {
+  display: none;
+}
+
+.board-wrap.joined .board-grid {
+  display: grid;
+}
+
+.board-wrap.joined .pieces-layer {
+  display: block;
+}
+
+.board-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.cell {
+  position: relative;
+  background: rgba(10, 14, 23, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 0.4rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.cell .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0f1320;
+  margin-top: 0.15rem;
+}
+
+.badge.card {
+  background: linear-gradient(120deg, #7ea4ff, #7cf2c9);
+}
+
+.pieces-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
 .token {

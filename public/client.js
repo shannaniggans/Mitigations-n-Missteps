@@ -2,6 +2,7 @@
   const DEFAULT_CARD_SPACES = [4, 9, 13, 18, 22, 27, 33, 38, 44, 49, 55, 60, 66, 72, 78, 83, 88, 94];
   const socket = io();
   const boardEl = document.getElementById('board');
+  const boardWrap = document.getElementById('board-wrap');
   const piecesLayer = document.getElementById('pieces-layer');
   const feedEl = document.getElementById('feed');
   const playersEl = document.getElementById('players');
@@ -34,8 +35,11 @@
   let boardSize = 100;
 
   const randomDefaultName = `Analyst-${Math.floor(Math.random() * 900 + 100)}`;
+  const randomRoomCode = generateRoomCode();
   document.getElementById('name').value = randomDefaultName;
-  document.getElementById('room').value = 'alpha';
+  const roomInput = document.getElementById('room');
+  roomInput.value = randomRoomCode;
+  roomInput.placeholder = randomRoomCode;
 
   socket.on('connect', () => {
     connectionHint.textContent = 'Connected. Join or share a room code to start.';
@@ -48,6 +52,7 @@
     statusDot.style.background = '#f78f8f';
     statusLabel.textContent = 'Disconnected';
     rollBtn.disabled = true;
+    boardWrap?.classList.remove('joined');
   });
 
   socket.on('joined', ({ playerId, roomId }) => {
@@ -60,6 +65,7 @@
     resetBtn.disabled = false;
     statusLabel.textContent = `In room ${roomId}`;
     statusDot.style.background = '#7cf2c9';
+    boardWrap?.classList.add('joined');
   });
 
   socket.on('state', (snapshot) => {
@@ -70,6 +76,9 @@
     lastSnapshot = snapshot;
     if (!boardBuilt || boardNeedsRebuild(state.cardSpaces)) {
       buildBoard(state.cardSpaces);
+    }
+    if (boardWrap && state.playerId) {
+      boardWrap.classList.add('joined');
     }
     renderTokens(snapshot);
     renderPlayers(snapshot);
@@ -86,7 +95,7 @@
   joinForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = document.getElementById('name').value.trim() || randomDefaultName;
-    const room = document.getElementById('room').value.trim() || 'alpha';
+    const room = document.getElementById('room').value.trim() || randomRoomCode;
     socket.emit('joinRoom', { name, roomId: room });
   });
 
@@ -118,6 +127,10 @@
       div.className = 'cell';
       div.style.gridRow = row;
       div.style.gridColumn = col;
+       // Alternate background like the illustrated board.
+      if ((row + col) % 2 === 0) {
+        div.classList.add('alt');
+      }
       div.dataset.cell = cell;
       const num = document.createElement('span');
       num.textContent = cell;
@@ -340,6 +353,15 @@
       li.innerHTML = `<strong>${entry.name}</strong> used <span class="muted">${entry.mitigation.label}</span>`;
       discardEl.appendChild(li);
     });
+  }
+
+  function generateRoomCode() {
+    const words = [
+      'shadow', 'signal', 'cipher', 'lock', 'patch', 'beacon', 'shield', 'pivot', 'trace', 'forge',
+      'lattice', 'vector', 'intel', 'summit', 'rally', 'bastion', 'stack', 'delta', 'quartz', 'ember'
+    ];
+    const pick = () => words[Math.floor(Math.random() * words.length)];
+    return `${pick()}-${pick()}`;
   }
 
 

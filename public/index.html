@@ -19,11 +19,6 @@
         An online-ready, card-driven take on Snakes &amp; Ladders. Land on card squares, draw a control (move up) or misstep (move back),
         and burn mitigation cards to cancel bad pulls.
       </p>
-      <div class="hero__tags">
-        <span>Online multiplayer</span>
-        <span>IR-themed controls &amp; missteps</span>
-        <span>Mitigation hands per player</span>
-      </div>
     </div>
     <div class="hero__panel">
       <form id="join-form">
@@ -48,8 +43,10 @@
   <main class="layout">
     <section class="board-shell">
       <div class="board-card splash-only">
-        <div class="board-wrap">
+        <div class="board-wrap" id="board-wrap">
           <div class="splash-cover"></div>
+          <div id="board" class="board-grid"></div>
+          <div id="pieces-layer" class="pieces-layer" aria-hidden="true"></div>
         </div>
         <div class="board-footer">
           <button id="roll-btn" class="btn primary" disabled>Roll the die</button>
