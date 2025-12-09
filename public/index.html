@@ -4,17 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mitigations &amp; Missteps</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#1f2a36',
+            panel: '#243240',
+            ink: '#f4ecd7',
+            sand: '#d8cfb5',
+            accent: '#c4612f',
+            teal: '#5da89d',
+            greenish: '#4c8c4f'
+          }
+        }
+      }
+    };
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="bg-bg text-ink">
   <div class="noise"></div>
   <header class="hero">
     <div class="hero__copy">
-      <p class="eyebrow">Mitigations &amp; Missteps</p>
-      <h1>Race to 100 with controls, missteps, and mitigation cards.</h1>
+      <img src="MnM.png" alt="Mitigations &amp; Missteps" class="logo-mark">
+      <h1>Race to the top by implementing controls and avoiding missteps.</h1>
       <p class="lede">
         An online-ready, card-driven take on Snakes &amp; Ladders. Land on card squares, draw a control (move up) or misstep (move back),
         and burn mitigation cards to cancel bad pulls.
@@ -28,12 +46,15 @@
         </label>
         <label>
           Room code
-          <input id="room" name="room" maxlength="32" autocomplete="off" placeholder="alpha">
-          <small>Share this code with teammates to join the same match.</small>
+          <input id="room" name="room" maxlength="32" autocomplete="off" placeholder="Room code">
         </label>
         <div class="hero__actions">
           <button type="submit" class="btn primary">Join room</button>
           <button type="button" id="reset-btn" class="btn ghost" disabled>Reset board</button>
+        </div>
+        <div class="status-row">
+          <span id="status-dot" class="status-dot"></span>
+          <span id="status-label" class="muted mono">Not connected</span>
         </div>
         <p class="hint" id="connection-hint">Waiting to connect...</p>
       </form>
@@ -42,8 +63,8 @@
 
   <main class="layout">
     <section class="board-shell">
-      <div class="board-card splash-only">
-        <div class="board-wrap" id="board-wrap">
+      <div class="board-card splash-only bg-panel border border-[rgba(255,255,255,0.08)] shadow-xl rounded-2xl p-5">
+        <div class="board-wrap rounded-xl" id="board-wrap">
           <div class="splash-cover"></div>
           <div id="board" class="board-grid"></div>
           <div id="pieces-layer" class="pieces-layer" aria-hidden="true"></div>
@@ -85,7 +106,7 @@
     </section>
 
     <aside class="sidebar">
-      <div class="panel">
+      <div class="panel players-panel">
         <div class="panel-head">
           <p class="eyebrow">Players</p>
           <h3>Turn order</h3>
@@ -103,6 +124,17 @@
     </aside>
   </main>
 
+  <div id="modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div id="modal-body"></div>
+      <div class="modal-actions">
+        <button id="modal-close" class="btn ghost">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@motionone/dom/dist/motion.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>

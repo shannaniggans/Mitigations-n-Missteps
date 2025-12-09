@@ -6,7 +6,6 @@
   const piecesLayer = document.getElementById('pieces-layer');
   const feedEl = document.getElementById('feed');
   const playersEl = document.getElementById('players');
-  const discardEl = document.getElementById('discard');
   const rollBtn = document.getElementById('roll-btn');
   const resetBtn = document.getElementById('reset-btn');
   const joinForm = document.getElementById('join-form');
@@ -17,6 +16,10 @@
   const lastEvent = document.getElementById('last-event');
   const connectionHint = document.getElementById('connection-hint');
   const handEl = document.getElementById('hand');
+  const discardEl = document.getElementById('discard');
+  const modal = document.getElementById('modal');
+  const modalBody = document.getElementById('modal-body');
+  const modalClose = document.getElementById('modal-close');
 
   const state = {
     playerId: null,
@@ -25,7 +28,8 @@
     lastActionId: 0,
     feed: [],
     pendingMitigation: null,
-    discards: []
+    discards: [],
+    lastModalAction: 0
   };
 
   const cellMap = new Map();
@@ -33,6 +37,7 @@
   let boardBuilt = false;
   let renderedCardSpaces = DEFAULT_CARD_SPACES;
   let boardSize = 100;
+  let hasAnimated = false;
 
   const randomDefaultName = `Analyst-${Math.floor(Math.random() * 900 + 100)}`;
   const randomRoomCode = generateRoomCode();
@@ -45,6 +50,7 @@
     connectionHint.textContent = 'Connected. Join or share a room code to start.';
     statusDot.style.background = '#7cf2c9';
     statusLabel.textContent = 'Connected';
+    runEntranceAnimations();
   });
 
   socket.on('disconnect', () => {
@@ -53,6 +59,7 @@
     statusLabel.textContent = 'Disconnected';
     rollBtn.disabled = true;
     boardWrap?.classList.remove('joined');
+    hideModal();
   });
 
   socket.on('joined', ({ playerId, roomId }) => {
@@ -60,12 +67,14 @@
     state.roomId = roomId;
     state.feed = [];
     state.lastActionId = 0;
+    state.lastModalAction = 0;
     renderFeed();
     connectionHint.textContent = `Joined room ${roomId}. Share the code to invite others.`;
     resetBtn.disabled = false;
     statusLabel.textContent = `In room ${roomId}`;
     statusDot.style.background = '#7cf2c9';
     boardWrap?.classList.add('joined');
+    runEntranceAnimations();
   });
 
   socket.on('state', (snapshot) => {
@@ -86,11 +95,16 @@
     renderDiscard(snapshot);
     renderStatus(snapshot);
     maybeAddToFeed(snapshot.lastAction, snapshot.actionCounter);
+    maybeShowModal(snapshot);
   });
 
   socket.on('toast', ({ message }) => {
     connectionHint.textContent = message;
   });
+
+  modalClose.addEventListener('click', hideModal);
+
+  modalClose.addEventListener('click', () => hideModal());
 
   joinForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -116,9 +130,9 @@
   function buildBoard(cardSpaces) {
     boardEl.innerHTML = '';
     cellMap.clear();
-    const size = boardSize || 100;
-    const cols = 10;
-    const rows = Math.ceil(size / cols);
+    const size = boardSize || 64;
+    const cols = 8;
+    const rows = 8;
     boardEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
     boardEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
     for (let cell = 1; cell <= size; cell += 1) {
@@ -127,9 +141,15 @@
       div.className = 'cell';
       div.style.gridRow = row;
       div.style.gridColumn = col;
-       // Alternate background like the illustrated board.
+      // Alternate background like the illustrated board.
       if ((row + col) % 2 === 0) {
         div.classList.add('alt');
+      }
+      if (cell === 1) {
+        const start = document.createElement('span');
+        start.className = 'badge start';
+        start.textContent = 'Start Here';
+        div.appendChild(start);
       }
       div.dataset.cell = cell;
       const num = document.createElement('span');
@@ -159,8 +179,8 @@
 
   function toGrid(cell) {
     const zeroIndexed = cell - 1;
-    const cols = 10;
-    const rows = Math.ceil((boardSize || 100) / cols);
+    const cols = 8;
+    const rows = 8;
     const rowFromBottom = Math.floor(zeroIndexed / cols);
     const colInRow = zeroIndexed % cols;
     const isEvenRow = rowFromBottom % 2 === 0;
@@ -319,8 +339,8 @@
     if (snapshot.winner) {
       const winner = snapshot.players.find((p) => p.id === snapshot.winner);
       turnHint.textContent = winner
-        ? `${winner.name} reached 100! Reset to replay.`
-        : 'Someone reached 100! Reset to replay.';
+        ? `${winner.name} reached the top! Reset to replay.`
+        : 'Someone reached the top! Reset to replay.';
     } else if (!state.playerId) {
       turnHint.textContent = 'Join a room to start rolling.';
     } else if (!snapshot.players.length) {
@@ -334,8 +354,8 @@
       turnHint.textContent = current ? `${current.name} is rolling now.` : 'Waiting for turn order.';
     }
 
-    statusLabel.textContent = snapshot.roomId ? `Room ${snapshot.roomId}` : 'Not joined';
-    statusDot.style.background = state.playerId ? '#7cf2c9' : '#a5adba';
+    if (statusLabel) statusLabel.textContent = snapshot.roomId ? `Room ${snapshot.roomId}` : 'Not joined';
+    if (statusDot) statusDot.style.background = state.playerId ? '#7cf2c9' : '#a5adba';
   }
 
   function renderDiscard(snapshot) {
@@ -399,9 +419,15 @@
   }
 
   function maybeAddToFeed(action, actionCounter) {
-    if (!action || !actionCounter || actionCounter === state.lastActionId) return;
-    state.lastActionId = actionCounter;
-    state.feed.unshift(describeAction(action));
+    if (!action) return;
+    const desc = describeAction(action);
+    const seq = Number.isFinite(actionCounter) ? actionCounter : null;
+    const id = action.id ?? seq ?? Date.now();
+    const alreadySeen = id === state.lastActionId || (state.feed[0] && state.feed[0] === desc);
+    if (alreadySeen) return;
+
+    state.lastActionId = id;
+    if (desc) state.feed.unshift(desc);
     if (state.feed.length > 8) state.feed.pop();
     renderFeed();
   }
@@ -422,7 +448,85 @@
     });
   }
 
+  function maybeShowModal(snapshot) {
+    const action = snapshot.lastAction;
+    const id = action?.id || snapshot.actionCounter;
+    if (!action || !action.card) {
+      hideModal();
+      return;
+    }
+    if (state.lastModalAction === id) return;
+    state.lastModalAction = id;
+
+    const card = action.card;
+    const isControl = card.type === 'control';
+    const pending = snapshot.pendingMitigation;
+    const isPendingForYou = pending && pending.playerId === state.playerId;
+    const desc = isControl
+      ? `Move ${card.delta > 0 ? '+' : ''}${card.delta} spaces.`
+      : card.pending
+        ? 'Choose a mitigation or take the setback.'
+        : card.mitigated
+          ? 'Mitigated.'
+          : card.noMatch
+            ? 'No matching mitigation — setback applies.'
+            : card.delta
+              ? `Move ${card.delta} spaces.`
+              : '';
+
+    modalBody.innerHTML = `
+      <div class="badge ${isControl ? 'control' : 'misstep'}" style="display:inline-block;padding:0.35rem 0.75rem;border-radius:999px;font-weight:800;margin-bottom:0.5rem;color:#0f1320;">${isControl ? 'CONTROL' : 'MISSTEP'}</div>
+      <h3>${card.label}</h3>
+      <p class="muted">${desc}</p>
+    `;
+
+    const actions = modal.querySelector('.modal-actions');
+    actions.innerHTML = '';
+
+    if (isPendingForYou && pending) {
+      (pending.mitigationOptions || []).forEach((c) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn primary';
+        btn.textContent = `Use: ${c.label}`;
+        btn.onclick = () => {
+          socket.emit('useMitigation', { mitigationId: c.id });
+          hideModal();
+        };
+        actions.appendChild(btn);
+      });
+      const skip = document.createElement('button');
+      skip.className = 'btn ghost';
+      skip.textContent = 'Take the misstep';
+      skip.onclick = () => {
+        socket.emit('acceptMisstep');
+        hideModal();
+      };
+      actions.appendChild(skip);
+    } else {
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'btn primary';
+      closeBtn.textContent = 'OK';
+      closeBtn.onclick = hideModal;
+      actions.appendChild(closeBtn);
+    }
+
+    modal.classList.remove('hidden');
+  }
+
+  function hideModal() {
+    modal.classList.add('hidden');
+  }
+
   // Initial board render so users see the layout before joining.
   buildBoard(DEFAULT_CARD_SPACES);
   renderFeed();
+
+  function runEntranceAnimations() {
+    if (hasAnimated) return;
+    if (!window.motion || !window.motion.animate) return;
+    hasAnimated = true;
+    const { animate, stagger } = window.motion;
+    animate('.board-card', { opacity: [0, 1], y: [12, 0] }, { duration: 0.5, easing: 'ease-out' });
+    animate('.panel', { opacity: [0, 1], y: [10, 0] }, { delay: stagger(0.05), duration: 0.5, easing: 'ease-out' });
+  }
 })();

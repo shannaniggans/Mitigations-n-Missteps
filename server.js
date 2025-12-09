@@ -10,9 +10,9 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 31337;
-const BOARD_SIZE = 50;
+const BOARD_SIZE = 64;
 const MAX_PLAYERS = 6;
-const START_POS = 0;
+const START_POS = 1;
 
 const DEFAULT_CARD_LIBRARY = {
   cardSpaces: [4, 9, 13, 18, 22, 27, 33, 38, 44, 49, 55, 60, 66, 72, 78, 83, 88, 94],
@@ -587,6 +587,10 @@ function clampDelta(delta) {
 }
 
 function serializeRoom(room) {
+  const lastAction = room.lastAction ? { ...room.lastAction } : null;
+  if (lastAction && lastAction.id == null) {
+    lastAction.id = room.actionCounter;
+  }
   return {
     roomId: room.id,
     players: room.order
@@ -594,7 +598,7 @@ function serializeRoom(room) {
       .filter(Boolean)
       .map((p) => ({ ...p })),
     currentTurn: room.order[room.currentTurnIndex ?? 0] || null,
-    lastAction: room.lastAction,
+    lastAction,
     winner: room.winner,
     actionCounter: room.actionCounter,
     boardSize: BOARD_SIZE,

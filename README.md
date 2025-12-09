@@ -9,7 +9,7 @@ Card-driven, online Snakes & Ladders variant for incident-response storytelling.
 
 ## How the game works
 - **Rooms**: Players join a named room (e.g., `alpha`). Anyone using the same code shares the same state.
-- **Joining**: Enter a display name (24 chars max) and room code (32 chars max). A random two-word room code is suggested each session; first player sets turn order, later players append to the end. Everyone starts off the board at position 0 until their first roll.
+- **Joining**: Enter a display name (24 chars max) and room code (32 chars max). A random two-word room code is suggested each session; first player sets turn order, later players append to the end. Everyone starts on square 1 (“Start Here”).
 - **Turn order**: Locked to join order. After each valid roll, turn advances to the next player (wraps to start).
 - **Dice**: Server rolls a fair 6-sided die when the current player clicks “Roll the die.” Out-of-turn clicks are rejected.
 - **Card squares**: Landing on a marked square draws a random card:
@@ -18,7 +18,7 @@ Card-driven, online Snakes & Ladders variant for incident-response storytelling.
 - **Mitigation hand**: Each player is dealt 3 mitigation cards from a shared deck on join/reset (no duplicates per game). Cards are single-use; once burned, they move to the discard pile (visible to all).
 - **Threat intel share**: When you share a square with another player, an automatic “share intel” roll happens. On 4–6, you draw one mitigation from the remaining deck (if any). Only one attempt per square per player; not triggered while a misstep choice is pending.
 - **Win condition**: First player to reach square 100 wins. Further rolls are blocked until a reset.
-- **Reset**: Any player can reset; positions zero out, mitigation hands are re-dealt, and turn order is preserved.
+- **Reset**: Any player can reset; positions go back to square 1, mitigation hands are re-dealt, and turn order is preserved.
 - **Player limit**: Up to 6 simultaneous players per room. Extra joins get a toast indicating the room is full.
 
 ## Customising for incident response
