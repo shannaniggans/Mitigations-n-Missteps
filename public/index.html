@@ -64,7 +64,6 @@
         </div>
         <div class="board-footer">
           <button id="roll-btn" class="btn primary" disabled>Roll the die</button>
-          <button id="intel-btn" class="btn ghost" disabled>Share threat intel</button>
           <div class="roll-readout">
             <div>
               <p class="eyebrow">Your turn?</p>
@@ -80,6 +79,22 @@
             </div>
           </div>
         </div>
+        <div class="hand-discard">
+          <div class="panel">
+            <div class="panel-head">
+              <p class="eyebrow">Your hand</p>
+              <h3>Mitigation cards</h3>
+            </div>
+            <ul id="hand" class="list hand"></ul>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <p class="eyebrow">Discard pile</p>
+              <h3>Used mitigations</h3>
+            </div>
+            <ul id="discard" class="list discard"></ul>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -92,23 +107,7 @@
         <ul id="players" class="list players"></ul>
       </div>
 
-      <div class="panel">
-        <div class="panel-head">
-          <p class="eyebrow">Your hand</p>
-          <h3>Mitigation cards</h3>
-        </div>
-        <ul id="hand" class="list hand"></ul>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <p class="eyebrow">Discard pile</p>
-          <h3>Used mitigations</h3>
-        </div>
-        <ul id="discard" class="list discard"></ul>
-      </div>
-
-      <div class="panel">
+      <div class="panel activity-panel">
         <div class="panel-head">
           <p class="eyebrow">Activity</p>
           <h3>Recent rolls</h3>

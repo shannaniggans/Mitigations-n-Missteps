@@ -7,7 +7,6 @@
   const playersEl = document.getElementById('players');
   const discardEl = document.getElementById('discard');
   const rollBtn = document.getElementById('roll-btn');
-  const intelBtn = document.getElementById('intel-btn');
   const resetBtn = document.getElementById('reset-btn');
   const joinForm = document.getElementById('join-form');
   const statusDot = document.getElementById('status-dot');
@@ -32,6 +31,7 @@
   let lastSnapshot = null;
   let boardBuilt = false;
   let renderedCardSpaces = DEFAULT_CARD_SPACES;
+  let boardSize = 100;
 
   const randomDefaultName = `Analyst-${Math.floor(Math.random() * 900 + 100)}`;
   document.getElementById('name').value = randomDefaultName;
@@ -64,6 +64,7 @@
 
   socket.on('state', (snapshot) => {
     state.cardSpaces = snapshot.cardSpaces || DEFAULT_CARD_SPACES;
+    boardSize = snapshot.boardSize || 100;
     state.pendingMitigation = snapshot.pendingMitigation || null;
     state.discards = snapshot.discards || [];
     lastSnapshot = snapshot;
@@ -93,10 +94,6 @@
     socket.emit('roll');
   });
 
-  intelBtn.addEventListener('click', () => {
-    socket.emit('shareIntel');
-  });
-
   resetBtn.addEventListener('click', () => {
     socket.emit('reset');
   });
@@ -110,7 +107,11 @@
   function buildBoard(cardSpaces) {
     boardEl.innerHTML = '';
     cellMap.clear();
-    const size = lastSnapshot?.boardSize || 100;
+    const size = boardSize || 100;
+    const cols = 10;
+    const rows = Math.ceil(size / cols);
+    boardEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    boardEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
     for (let cell = 1; cell <= size; cell += 1) {
       const { row, col } = toGrid(cell);
       const div = document.createElement('div');
@@ -145,11 +146,13 @@
 
   function toGrid(cell) {
     const zeroIndexed = cell - 1;
-    const rowFromBottom = Math.floor(zeroIndexed / 10);
-    const colInRow = zeroIndexed % 10;
+    const cols = 10;
+    const rows = Math.ceil((boardSize || 100) / cols);
+    const rowFromBottom = Math.floor(zeroIndexed / cols);
+    const colInRow = zeroIndexed % cols;
     const isEvenRow = rowFromBottom % 2 === 0;
-    const col = isEvenRow ? colInRow + 1 : 10 - colInRow;
-    const row = 10 - rowFromBottom;
+    const col = isEvenRow ? colInRow + 1 : cols - colInRow;
+    const row = rows - rowFromBottom;
     return { row, col };
   }
 
@@ -167,7 +170,7 @@
   function getOffboardCenter(count) {
     const boardRect = boardEl.getBoundingClientRect();
     if (!boardRect.width || !boardRect.height) return null;
-    const x = 24;
+    const x = -24; // render just outside the left edge
     const y = boardRect.height - 24 - (count > 0 ? (count - 1) * 40 : 0);
     return { x, y };
   }
@@ -289,7 +292,6 @@
     const isYourTurn = snapshot.currentTurn === state.playerId && !snapshot.winner && !isPending;
     rollBtn.disabled = !isYourTurn;
     resetBtn.disabled = !state.playerId;
-    intelBtn.disabled = !canShareIntel(snapshot);
 
     if (snapshot.lastAction) {
       if (snapshot.lastAction.roll) {
@@ -314,8 +316,6 @@
       turnHint.textContent = 'Choose a mitigation or take the misstep.';
     } else if (isYourTurn) {
       turnHint.textContent = 'Your move. Roll when ready.';
-    } else if (canShareIntel(snapshot)) {
-      turnHint.textContent = 'Share threat intel for a shot at a mitigation card.';
     } else {
       const current = snapshot.players.find((p) => p.id === snapshot.currentTurn);
       turnHint.textContent = current ? `${current.name} is rolling now.` : 'Waiting for turn order.';
@@ -342,13 +342,6 @@
     });
   }
 
-  function canShareIntel(snapshot) {
-    const me = snapshot.players.find((p) => p.id === state.playerId);
-    if (!me || snapshot.winner) return false;
-    if (snapshot.pendingMitigation && snapshot.pendingMitigation.playerId === state.playerId) return false;
-    if (me.position <= 0 || me.lastIntelAt === me.position) return false;
-    return snapshot.players.some((p) => p.id !== state.playerId && p.position === me.position);
-  }
 
   function describeAction(action) {
     if (!action) return '–';

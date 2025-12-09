@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 31337;
-const BOARD_SIZE = 100;
+const BOARD_SIZE = 50;
 const MAX_PLAYERS = 6;
 const START_POS = 0;
 
@@ -61,6 +61,7 @@ const DEFAULT_CARD_LIBRARY = {
 const { controls: CONTROL_CARDS, missteps: MISSTEP_CARDS, mitigations: MITIGATION_CARDS, cardSpaces: CARD_SPACES } =
   loadCardLibrary(DEFAULT_CARD_LIBRARY);
 const MITIGATION_BY_ID = new Map(MITIGATION_CARDS.map((c) => [c.id, c]));
+const CARD_SPACE_COUNT = 25;
 
 const COLORS = ['#ff8a00', '#6c5ce7', '#00b894', '#e84393', '#0984e3', '#d63031'];
 
@@ -87,7 +88,7 @@ io.on('connection', (socket) => {
           name: trimmedName,
           position: START_POS,
           color: COLORS[room.order.length % COLORS.length],
-          hand: dealMitigations(room, 5),
+          hand: dealMitigations(room, 3),
           lastIntelAt: null,
           learnedMitigations: []
         };
@@ -130,10 +131,28 @@ io.on('connection', (socket) => {
 
     const roll = Math.floor(Math.random() * 6) + 1;
     const start = player.position || START_POS;
-    let target = Math.min(start + roll, BOARD_SIZE);
+    const rawTarget = start + roll;
+
+    if (rawTarget > BOARD_SIZE) {
+      player.position = BOARD_SIZE;
+      room.lastAction = {
+        id: ++room.actionCounter,
+        playerId: player.id,
+        name: player.name,
+        roll,
+        from: start,
+        to: BOARD_SIZE,
+        card: null
+      };
+      room.winner = player.id;
+      broadcast(room.id, `${player.name} rolled a ${roll}`);
+      return;
+    }
+
+    let target = rawTarget;
     let cardResult = null;
 
-    if (CARD_SPACES.includes(target)) {
+    if (room.cardSpaces.includes(target)) {
       const drawn = drawEventCard();
       cardResult = { ...drawn };
       if (drawn.type === 'control') {
@@ -152,24 +171,24 @@ io.on('connection', (socket) => {
             room.pendingMitigation = {
               playerId: player.id,
               start,
-            forwardTarget: target,
-            card: drawn,
-            roll,
-            tags: drawn.tags || [],
-            mitigationOptions: mitigationOptions.map((c) => c.id)
-          };
-          player.position = target; // show forward move while decision pending
-          room.lastAction = {
-            id: ++room.actionCounter,
-            playerId: player.id,
-            name: player.name,
-            roll,
-            from: start,
-            to: target,
-            card: { ...drawn, pending: true, mitigationOptions: mitigationOptions.map((c) => c.id) },
-            pendingMitigation: true
-          };
-          socket.emit('toast', { type: 'info', message: 'Choose a mitigation or take the misstep.' });
+              forwardTarget: target,
+              card: drawn,
+              roll,
+              tags: drawn.tags || [],
+              mitigationOptions: mitigationOptions.map((c) => c.id)
+            };
+            player.position = target; // show forward move while decision pending
+            room.lastAction = {
+              id: ++room.actionCounter,
+              playerId: player.id,
+              name: player.name,
+              roll,
+              from: start,
+              to: target,
+              card: { ...drawn, pending: true, mitigationOptions: mitigationOptions.map((c) => c.id) },
+              pendingMitigation: true
+            };
+            socket.emit('toast', { type: 'info', message: 'Choose a mitigation or take the misstep.' });
             broadcast(room.id, `${player.name} drew a misstep and must choose mitigation`);
             return;
           }
@@ -196,6 +215,7 @@ io.on('connection', (socket) => {
       room.winner = player.id;
     } else {
       advanceTurn(room);
+      runShareIntel(room, player);
     }
 
     broadcast(room.id, `${player.name} rolled a ${roll}`);
@@ -228,8 +248,9 @@ io.on('connection', (socket) => {
     };
     room.discards = [];
     room.mitigationDeck = buildMitigationDeck();
+    room.cardSpaces = generateCardSpaces(CARD_SPACE_COUNT);
     room.players.forEach((p) => {
-      p.hand = dealMitigations(room, 5);
+      p.hand = dealMitigations(room, 3);
     });
     broadcast(room.id, 'Board reset');
   });
@@ -315,37 +336,9 @@ io.on('connection', (socket) => {
     if (!roomId) return;
     const room = rooms.get(roomId);
     if (!room) return;
-    if (room.pendingMitigation) {
-      socket.emit('toast', { type: 'info', message: 'Resolve the mitigation choice first.' });
-      return;
-    }
     const player = room.players.get(socket.id);
-    if (!player || room.winner) return;
-    if (!canShareIntel(room, player)) {
-      socket.emit('toast', { type: 'info', message: 'Share intel only when sharing a square with someone and not already attempted here.' });
-      return;
-    }
-    player.lastIntelAt = player.position;
-    const roll = Math.floor(Math.random() * 6) + 1;
-    let card = null;
-    let success = roll >= 4 && room.mitigationDeck.length > 0;
-    if (success) {
-      card = drawMitigation(room);
-      if (!card) success = false;
-      else player.hand.push(card);
-    }
-
-    room.lastAction = {
-      id: ++room.actionCounter,
-      playerId: player.id,
-      name: player.name,
-      intel: true,
-      roll,
-      success,
-      card,
-      position: player.position
-    };
-    broadcast(room.id, `${player.name} shared intel`);
+    if (!player) return;
+    runShareIntel(room, player, socket);
   });
 
   socket.on('disconnect', () => {
@@ -393,7 +386,8 @@ function getRoom(roomId) {
       actionCounter: 0,
       pendingMitigation: null,
       discards: [],
-      mitigationDeck: buildMitigationDeck()
+      mitigationDeck: buildMitigationDeck(),
+      cardSpaces: generateCardSpaces(CARD_SPACE_COUNT)
     });
   }
   return rooms.get(roomId);
@@ -447,6 +441,40 @@ function drawMitigation(room) {
   return room.mitigationDeck.pop();
 }
 
+function runShareIntel(room, player, socket) {
+  if (!player || !room || room.winner) return false;
+  if (room.pendingMitigation) {
+    if (socket) socket.emit('toast', { type: 'info', message: 'Resolve the mitigation choice first.' });
+    return false;
+  }
+  if (!canShareIntel(room, player)) {
+    if (socket) socket.emit('toast', { type: 'info', message: 'Share intel only when sharing a square with someone and not already attempted here.' });
+    return false;
+  }
+  player.lastIntelAt = player.position;
+  const roll = Math.floor(Math.random() * 6) + 1;
+  let card = null;
+  let success = roll >= 4 && room.mitigationDeck.length > 0;
+  if (success) {
+    card = drawMitigation(room);
+    if (!card) success = false;
+    else player.hand.push(card);
+  }
+
+  room.lastAction = {
+    id: ++room.actionCounter,
+    playerId: player.id,
+    name: player.name,
+    intel: true,
+    roll,
+    success,
+    card,
+    position: player.position
+  };
+  broadcast(room.id, `${player.name} shared intel`);
+  return true;
+}
+
 function rememberMitigation(player, mitigation) {
   if (!mitigation || !mitigation.id) return;
   if (!Array.isArray(player.learnedMitigations)) player.learnedMitigations = [];
@@ -475,6 +503,19 @@ function canShareIntel(room, player) {
     if (p.id !== player.id && p.position === player.position) shared = true;
   });
   return shared;
+}
+
+function generateCardSpaces(count) {
+  const spaces = new Set();
+  spaces.add(BOARD_SIZE); // always draw on the last square
+  const max = BOARD_SIZE;
+  const target = Math.min(count, max);
+  while (spaces.size < target) {
+    const val = Math.floor(Math.random() * max) + 1; // 1..BOARD_SIZE
+    spaces.add(val);
+    if (spaces.size === max) break;
+  }
+  return Array.from(spaces);
 }
 
 function loadCardLibrary(fallback) {
@@ -518,7 +559,7 @@ function normalizeControl(card) {
   return {
     id: String(card.id || ''),
     label: String(card.label || ''),
-    delta: Number(card.delta) || 0
+    delta: clampDelta(card.delta)
   };
 }
 
@@ -526,7 +567,7 @@ function normalizeMisstep(card) {
   return {
     id: String(card.id || ''),
     label: String(card.label || ''),
-    delta: Number(card.delta) || 0,
+    delta: clampDelta(card.delta),
     tags: Array.isArray(card.tags) ? card.tags.map((t) => String(t)) : []
   };
 }
@@ -537,6 +578,12 @@ function normalizeMitigation(card) {
     label: String(card.label || ''),
     mitigates: Array.isArray(card.mitigates) ? card.mitigates.map((t) => String(t)) : []
   };
+}
+
+function clampDelta(delta) {
+  const n = Number(delta);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(-10, Math.min(10, n));
 }
 
 function serializeRoom(room) {
@@ -551,7 +598,7 @@ function serializeRoom(room) {
     winner: room.winner,
     actionCounter: room.actionCounter,
     boardSize: BOARD_SIZE,
-    cardSpaces: CARD_SPACES,
+    cardSpaces: room.cardSpaces,
     pendingMitigation: room.pendingMitigation
       ? {
           ...room.pendingMitigation,

@@ -196,6 +196,8 @@ small {
   border: 1px solid var(--border);
   padding: 1.25rem;
   box-shadow: var(--shadow);
+  display: grid;
+  gap: 1rem;
 }
 
 .board-head {
@@ -229,7 +231,7 @@ small {
     rgba(255, 255, 255, 0.03);
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .board-grid {
@@ -312,6 +314,12 @@ small {
   flex-wrap: wrap;
 }
 
+.hand-discard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
 .roll-readout {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -381,6 +389,17 @@ small {
   border-radius: 0.75rem;
 }
 
+.activity-panel {
+  max-height: 550px;
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-panel .list.feed {
+  flex: 1;
+  overflow-y: auto;
+}
+
 .list.discard li {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -418,6 +437,9 @@ small {
   }
   .layout {
     grid-template-columns: 1fr;
+  }
+  .activity-panel {
+    max-height: 400px;
   }
 }
 
