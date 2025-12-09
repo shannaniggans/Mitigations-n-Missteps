@@ -1,0 +1,26 @@
+/node_modules
+.pnp
+.pnp.js
+.pnp.cjs
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# editor cruft
+.DS_Store
+.vscode/
+.idea/
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# build/output
+dist/
+build/
+.cache/
+.parcel-cache/
