@@ -130,17 +130,18 @@
     </a>
   </footer>
 
-  <div id="modal" class="modal hidden">
-    <div class="modal-backdrop"></div>
-    <div class="modal-card">
-      <div id="modal-body"></div>
-      <div class="modal-actions">
-        <button id="modal-close" class="btn ghost">Close</button>
-      </div>
+  <div id="card-draw" class="card-draw hidden">
+    <div class="card-backdrop"></div>
+    <div class="card-face">
+      <div class="card-face__type" id="card-draw-type">CARD</div>
+      <h3 id="card-draw-title"></h3>
+      <p id="card-draw-desc" class="muted"></p>
+      <div id="card-draw-actions" class="card-draw-actions"></div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@motionone/dom/dist/motion.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>

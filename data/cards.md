@@ -179,6 +179,10 @@ mitigations:
   - id: mit-least-priv
     label: Least privilege & JIT admin (M1026)
     mitigates: [T1068, T1021.001]
+  - id: mit-antivirus
+    label: Antivirus & Antimalware
+    mitre-id: M1049
+    desc: Anti-virus can be used to automatically quarantine suspicious files.
 ---
 
 # Card Library

@@ -17,9 +17,18 @@
   const connectionHint = document.getElementById('connection-hint');
   const handEl = document.getElementById('hand');
   const discardEl = document.getElementById('discard');
-  const modal = document.getElementById('modal');
-  const modalBody = document.getElementById('modal-body');
-  const modalClose = document.getElementById('modal-close');
+  const cardDraw = document.getElementById('card-draw');
+  const cardDrawType = document.getElementById('card-draw-type');
+  const cardDrawTitle = document.getElementById('card-draw-title');
+  const cardDrawDesc = document.getElementById('card-draw-desc');
+  const cardDrawActions = document.getElementById('card-draw-actions');
+  if (cardDraw) {
+    cardDraw.addEventListener('click', (e) => {
+      if (e.target === cardDraw || e.target.classList.contains('card-backdrop')) {
+        hideCard();
+      }
+    });
+  }
 
   const state = {
     playerId: null,
@@ -102,16 +111,13 @@
     renderDiscard(snapshot);
     renderStatus(snapshot);
     maybeAddToFeed(snapshot.lastAction, snapshot.actionCounter);
-    maybeShowModal(snapshot);
+    maybeShowCard(snapshot);
+    maybeCelebrate(snapshot);
   });
 
   socket.on('toast', ({ message }) => {
     connectionHint.textContent = message;
   });
-
-  modalClose.addEventListener('click', hideModal);
-
-  modalClose.addEventListener('click', () => hideModal());
 
   joinForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -175,6 +181,18 @@
     }
     boardBuilt = true;
     renderedCardSpaces = [...cardSpaces];
+  }
+
+  function maybeCelebrate(snapshot) {
+    if (!snapshot.winner || !window.confetti) return;
+    const winner = snapshot.players.find((p) => p.id === snapshot.winner);
+    window.confetti({
+      particleCount: 160,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#e28e55', '#5da89d', '#4c8c4f', '#f4ecd7', '#ff8a00']
+    });
+    connectionHint.textContent = winner ? `${winner.name} wins!` : 'We have a winner!';
   }
 
   function boardNeedsRebuild(cardSpaces = []) {
@@ -461,11 +479,11 @@
     });
   }
 
-  function maybeShowModal(snapshot) {
+  function maybeShowCard(snapshot) {
     const action = snapshot.lastAction;
     const id = action?.id || snapshot.actionCounter;
     if (!action || !action.card) {
-      hideModal();
+      hideCard();
       return;
     }
     if (state.lastModalAction === id) return;
@@ -487,15 +505,14 @@
               ? `Move ${card.delta} spaces.`
               : '';
 
-    modalBody.innerHTML = `
-      <div class="badge ${isControl ? 'control' : 'misstep'}" style="display:inline-block;padding:0.35rem 0.75rem;border-radius:999px;font-weight:800;margin-bottom:0.5rem;color:#0f1320;">${isControl ? 'CONTROL' : 'MISSTEP'}</div>
-      <h3>${card.label}</h3>
-      <p class="muted">${desc}</p>
-    `;
+    if (cardDraw) cardDraw.dataset.type = isControl ? 'control' : 'misstep';
+    cardDrawType.textContent = isControl ? 'CONTROL' : 'MISSTEP';
+    cardDrawType.classList.toggle('control', isControl);
+    cardDrawType.classList.toggle('misstep', !isControl);
+    cardDrawTitle.textContent = card.label;
+    cardDrawDesc.textContent = desc || '';
 
-    const actions = modal.querySelector('.modal-actions');
-    actions.innerHTML = '';
-
+    cardDrawActions.innerHTML = '';
     if (isPendingForYou && pending) {
       (pending.mitigationOptions || []).forEach((c) => {
         const btn = document.createElement('button');
@@ -503,31 +520,35 @@
         btn.textContent = `Use: ${c.label}`;
         btn.onclick = () => {
           socket.emit('useMitigation', { mitigationId: c.id });
-          hideModal();
+          hideCard();
         };
-        actions.appendChild(btn);
+        cardDrawActions.appendChild(btn);
       });
       const skip = document.createElement('button');
       skip.className = 'btn ghost';
       skip.textContent = 'Take the misstep';
       skip.onclick = () => {
         socket.emit('acceptMisstep');
-        hideModal();
+        hideCard();
       };
-      actions.appendChild(skip);
+      cardDrawActions.appendChild(skip);
     } else {
       const closeBtn = document.createElement('button');
       closeBtn.className = 'btn primary';
       closeBtn.textContent = 'OK';
-      closeBtn.onclick = hideModal;
-      actions.appendChild(closeBtn);
+      closeBtn.onclick = hideCard;
+      cardDrawActions.appendChild(closeBtn);
     }
 
-    modal.classList.remove('hidden');
+    cardDraw.classList.remove('hidden');
+    if (window.motion?.animate) {
+      window.motion.animate('.card-face', { opacity: [0, 1], transform: ['translateY(-12px) scale(0.92)', 'translateY(0) scale(1)'] }, { duration: 0.4, easing: 'ease-out' });
+      window.motion.animate('.card-backdrop', { opacity: [0, 1] }, { duration: 0.2, easing: 'ease-out' });
+    }
   }
 
-  function hideModal() {
-    modal.classList.add('hidden');
+  function hideCard() {
+    if (cardDraw) cardDraw.classList.add('hidden');
   }
 
   // Initial board render so users see the layout before joining.
