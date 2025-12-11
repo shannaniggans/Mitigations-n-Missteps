@@ -90,7 +90,8 @@ io.on('connection', (socket) => {
           color: COLORS[room.order.length % COLORS.length],
           hand: dealMitigations(room, 3),
           lastIntelAt: null,
-          learnedMitigations: []
+          learnedMitigations: [],
+          needsInitialMitigation: true
         };
       room.players.set(player.id, player);
       room.order.push(player.id);
@@ -117,6 +118,10 @@ io.on('connection', (socket) => {
     }
     const player = room.players.get(socket.id);
     if (!player) return;
+    if (player.needsInitialMitigation) {
+      socket.emit('toast', { type: 'info', message: 'Implement one mitigation first.' });
+      return;
+    }
     player.lastIntelAt = null;
     if (room.winner) {
       socket.emit('toast', { type: 'info', message: 'Game finished. Reset to play again.' });
@@ -214,8 +219,8 @@ io.on('connection', (socket) => {
     if (target >= BOARD_SIZE) {
       room.winner = player.id;
     } else {
+      shareIntelForSquare(room, player.position);
       advanceTurn(room);
-      runShareIntel(room, player);
     }
 
     broadcast(room.id, `${player.name} rolled a ${roll}`);
@@ -233,6 +238,7 @@ io.on('connection', (socket) => {
       p.hand = [];
       p.lastIntelAt = null;
       p.learnedMitigations = [];
+      p.needsInitialMitigation = true;
     });
     room.winner = null;
     room.currentTurnIndex = room.order.length ? 0 : null;
@@ -339,6 +345,27 @@ io.on('connection', (socket) => {
     const player = room.players.get(socket.id);
     if (!player) return;
     runShareIntel(room, player, socket);
+  });
+
+  socket.on('selectInitialMitigation', ({ mitigationId } = {}) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) return;
+    const room = rooms.get(roomId);
+    if (!room) return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.needsInitialMitigation) return;
+    const idx = player.hand.findIndex((c) => c.id === mitigationId);
+    if (idx === -1) return;
+    const mitigation = player.hand.splice(idx, 1)[0];
+    rememberMitigation(player, mitigation);
+    player.needsInitialMitigation = false;
+    room.lastAction = {
+      id: ++room.actionCounter,
+      playerId: player.id,
+      name: player.name,
+      card: { type: 'mitigation', label: mitigation.label, implemented: true }
+    };
+    broadcast(room.id, `${player.name} implemented a mitigation`);
   });
 
   socket.on('disconnect', () => {
@@ -473,6 +500,16 @@ function runShareIntel(room, player, socket) {
   };
   broadcast(room.id, `${player.name} shared intel`);
   return true;
+}
+
+function shareIntelForSquare(room, position) {
+  if (!room || room.winner) return;
+  const contenders = [];
+  room.players.forEach((p) => {
+    if (p.position === position) contenders.push(p);
+  });
+  if (contenders.length < 2) return;
+  contenders.forEach((p) => runShareIntel(room, p));
 }
 
 function rememberMitigation(player, mitigation) {

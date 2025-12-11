@@ -29,6 +29,13 @@
       }
     });
   }
+  if (cardDraw) {
+    cardDraw.addEventListener('click', (e) => {
+      if (e.target === cardDraw || e.target.classList.contains('card-backdrop')) {
+        hideCard();
+      }
+    });
+  }
 
   const state = {
     playerId: null,
@@ -111,6 +118,7 @@
     renderDiscard(snapshot);
     renderStatus(snapshot);
     maybeAddToFeed(snapshot.lastAction, snapshot.actionCounter);
+    maybePromptInitialMitigation(snapshot);
     maybeShowCard(snapshot);
     maybeCelebrate(snapshot);
   });
@@ -479,9 +487,40 @@
     });
   }
 
+  function maybePromptInitialMitigation(snapshot) {
+    const me = snapshot.players.find((p) => p.id === state.playerId);
+    if (!me || !me.needsInitialMitigation) return;
+    if (!Array.isArray(me.hand) || !me.hand.length) return;
+
+    cardDraw.classList.remove('hidden');
+    cardDraw.dataset.type = 'implement';
+    cardDrawType.textContent = 'IMPLEMENT';
+    cardDrawType.classList.remove('control', 'misstep');
+    cardDrawTitle.textContent = 'Choose a mitigation to implement now';
+    cardDrawDesc.textContent = 'Implemented mitigations will auto-cancel matching missteps later.';
+
+    cardDrawActions.innerHTML = '';
+    me.hand.forEach((c) => {
+      const btn = document.createElement('button');
+      btn.className = 'btn primary';
+      btn.textContent = c.label;
+      btn.onclick = () => {
+        socket.emit('selectInitialMitigation', { mitigationId: c.id });
+        hideCard();
+      };
+      cardDrawActions.appendChild(btn);
+    });
+    if (window.motion?.animate) {
+      window.motion.animate('.card-face', { opacity: [0, 1], transform: ['translateY(-12px) scale(0.92)', 'translateY(0) scale(1)'] }, { duration: 0.4, easing: 'ease-out' });
+      window.motion.animate('.card-backdrop', { opacity: [0, 1] }, { duration: 0.2, easing: 'ease-out' });
+    }
+  }
+
   function maybeShowCard(snapshot) {
     const action = snapshot.lastAction;
     const id = action?.id || snapshot.actionCounter;
+    const me = snapshot.players.find((p) => p.id === state.playerId);
+    if (me?.needsInitialMitigation) return;
     if (!action || !action.card) {
       hideCard();
       return;
