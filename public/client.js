@@ -173,9 +173,11 @@
         div.appendChild(start);
       }
       div.dataset.cell = cell;
-      const num = document.createElement('span');
-      num.textContent = cell;
-      div.appendChild(num);
+      if (cell !== 1) {
+        const num = document.createElement('span');
+        num.textContent = cell - 1;
+        div.appendChild(num);
+      }
 
       if (cardSpaces.includes(cell)) {
         const badge = document.createElement('span');
@@ -285,7 +287,7 @@
       dot.style.background = player.color;
       const name = document.createElement('div');
       const handCount = Array.isArray(player.hand) ? player.hand.length : 0;
-      const loc = player.position > 0 ? `Square ${player.position}` : 'Off board';
+      const loc = formatSquareLabel(player.position);
       name.innerHTML = `<strong>${player.name}</strong><br><span class="muted">${loc} • ${handCount} mitigations</span>`;
       const status = document.createElement('span');
       status.className = 'tag';
@@ -419,11 +421,14 @@
 
 
   function describeAction(action) {
-    if (!action) return '–';
+    if (!action) return '-';
     if (action.reset) return `${action.name} reset the board`;
     const name = action.name || 'Someone';
     const rollPart = action.roll ? `rolled ${action.roll}` : 'moved';
-    const fromTo = action.from ? ` (${action.from}→${action.to})` : ` to ${action.to}`;
+    const hasFrom = action.from !== undefined && action.from !== null;
+    const fromLabel = hasFrom ? formatSquareLabel(action.from) : '';
+    const toLabel = formatSquareLabel(action.to);
+    const fromTo = hasFrom ? ` (${fromLabel}→${toLabel})` : ` to ${toLabel}`;
     if (action.intel) {
       if (action.success && action.card) {
         return `${name} shared intel (roll ${action.roll}) and gained ${action.card.label}`;
@@ -440,15 +445,21 @@
       return `${name} drew MISSTEP: ${card.label} but auto-mitigated via prior ${card.mitigation.label}`;
     }
     if (card.noMatch) {
-      return `${name} drew MISSTEP: ${card.label} (no matching mitigation) → ${action.to}`;
+      return `${name} drew MISSTEP: ${card.label} (no matching mitigation) → ${toLabel}`;
     }
     if (card.type === 'control') {
-      return `${name} drew CONTROL: ${card.label} (${deltaText}) → ${action.to}`;
+      return `${name} drew CONTROL: ${card.label} (${deltaText}) → ${toLabel}`;
     }
     if (card.mitigated) {
       return `${name} drew MISSTEP: ${card.label} but mitigated with ${card.mitigation?.label || 'a card'}`;
     }
-    return `${name} drew MISSTEP: ${card.label} (${deltaText}) → ${action.to}`;
+    return `${name} drew MISSTEP: ${card.label} (${deltaText}) → ${toLabel}`;
+  }
+
+  function formatSquareLabel(position) {
+    if (!Number.isFinite(position) || position <= 0) return 'Off board';
+    if (position === 1) return 'Start Here';
+    return `Square ${position - 1}`;
   }
 
   function maybeAddToFeed(action, actionCounter) {

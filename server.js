@@ -157,6 +157,7 @@ io.on('connection', (socket) => {
     let target = rawTarget;
     let cardResult = null;
 
+    room.cardSpaces = sanitizeCardSpaces(room.cardSpaces);
     if (room.cardSpaces.includes(target)) {
       const drawn = drawEventCard();
       cardResult = { ...drawn };
@@ -254,7 +255,7 @@ io.on('connection', (socket) => {
     };
     room.discards = [];
     room.mitigationDeck = buildMitigationDeck();
-    room.cardSpaces = generateCardSpaces(CARD_SPACE_COUNT);
+    room.cardSpaces = sanitizeCardSpaces(generateCardSpaces(CARD_SPACE_COUNT));
     room.players.forEach((p) => {
       p.hand = dealMitigations(room, 3);
     });
@@ -414,7 +415,7 @@ function getRoom(roomId) {
       pendingMitigation: null,
       discards: [],
       mitigationDeck: buildMitigationDeck(),
-      cardSpaces: generateCardSpaces(CARD_SPACE_COUNT)
+      cardSpaces: sanitizeCardSpaces(generateCardSpaces(CARD_SPACE_COUNT))
     });
   }
   return rooms.get(roomId);
@@ -546,13 +547,25 @@ function generateCardSpaces(count) {
   const spaces = new Set();
   spaces.add(BOARD_SIZE); // always draw on the last square
   const max = BOARD_SIZE;
-  const target = Math.min(count, max);
+  const min = 2;
+  const target = Math.min(count, max - 1);
   while (spaces.size < target) {
-    const val = Math.floor(Math.random() * max) + 1; // 1..BOARD_SIZE
+    const val = Math.floor(Math.random() * (max - min + 1)) + min; // 2..BOARD_SIZE
     spaces.add(val);
-    if (spaces.size === max) break;
+    if (spaces.size === max - 1) break;
   }
   return Array.from(spaces);
+}
+
+function sanitizeCardSpaces(spaces = []) {
+  const unique = new Set();
+  spaces.forEach((value) => {
+    const num = Number(value);
+    if (Number.isFinite(num) && num > START_POS && num <= BOARD_SIZE) {
+      unique.add(num);
+    }
+  });
+  return Array.from(unique);
 }
 
 function loadCardLibrary(fallback) {
@@ -582,7 +595,7 @@ function normalizeCardLibrary(parsed, fallback) {
   const missteps = safe(parsed.missteps).map(normalizeMisstep);
   const mitigations = safe(parsed.mitigations).map(normalizeMitigation);
   const cardSpaces = Array.isArray(parsed.cardSpaces) && parsed.cardSpaces.length
-    ? parsed.cardSpaces.map((n) => Number(n) || 0).filter((n) => n > 0 && n <= BOARD_SIZE)
+    ? parsed.cardSpaces.map((n) => Number(n) || 0).filter((n) => n > 1 && n <= BOARD_SIZE)
     : fallback.cardSpaces;
   return {
     controls: controls.length ? controls : fallback.controls,
